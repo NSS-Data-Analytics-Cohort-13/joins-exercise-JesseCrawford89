@@ -12,9 +12,9 @@ FROM specs
 
 --Question 1: Give the name, release year, and worldwide gross of the lowest grossing movie.
 
-SELECT s.film_title, s.release_year, s.movie_id, r.worldwide_gross
+SELECT s.film_title, s.release_year, r.worldwide_gross
 FROM specs AS s
-RIGHT JOIN revenue AS r
+LEFT JOIN revenue AS r
 	USING (movie_id)
 ORDER BY r.worldwide_gross
 
@@ -22,18 +22,21 @@ ORDER BY r.worldwide_gross
 
 --Question 2: What year has the highest average imdb rating?
 
-SELECT r.imdb_rating, s.release_year
+SELECT AVG(r.imdb_rating), s.release_year
 FROM rating AS r
 LEFT JOIN specs AS s
 	ON r.movie_id=s.movie_id
-ORDER BY r.imdb_rating DESC
+GROUP BY s.release_year
+ORDER BY AVG(r.imdb_rating) DESC
 
---Answer: 2008 had the highest IMDB rating of 9.0.
+--Answer: 1991 had the highest avg IMDB rating of 7.45.
 
 --Question 3: What is the highest grossing G-rated movie? Which company distributed it?
 
-SELECT s.film_title AS movie_name, d.company_name, r.worldwide_gross, s.mpaa_rating
-FROM specs AS s
+SELECT s.film_title AS movie_name
+	,	d.company_name
+	,	r.worldwide_gross
+	FROM specs AS s
 RIGHT JOIN revenue AS r
 	ON s.movie_id=r.movie_id
 RIGHT JOIN distributors AS d
@@ -56,7 +59,7 @@ ORDER BY COUNT(s.film_title) DESC
 
 --Question 5: Write a query that returns the five distributors with the highest average movie budget.
 
-SELECT d.company_name, AVG(r.film_budget)
+SELECT d.company_name, ROUND(AVG(r.film_budget), 2)::MONEY AS avg_movie_budget
 FROM distributors AS d
 FULL JOIN specs AS s 
 	ON d.distributor_id=s.domestic_distributor_id
@@ -67,11 +70,11 @@ ORDER BY AVG(r.film_budget) DESC
 LIMIT 5;
 
 /* Answer: 
-Walt Disney = 148735526.31578947
-Sony Pictures = 139129032.25806452
+Walt Disney = 148735526.32
+Sony Pictures = 139129032.26
 Lionsgate = 122600000.00000000
-DreamWorks = 121352941.17647059
-Warner Bros. = 103430985.91549296
+DreamWorks = 121352941.18
+Warner Bros. = 103430985.92
 */
 
 --Question 6: How many movies in the dataset are distributed by a company which is not headquartered in California? Which of these movies has the highest imdb rating?
@@ -89,11 +92,16 @@ ORDER BY r.imdb_rating DESC
 
 --Question 7: Which have a higher average rating, movies which are over two hours long or movies which are under two hours?
 
-SELECT s.length_in_min, AVG(r.imdb_rating) AS avg_imdb_rating
+SELECT 
+CASE
+	WHEN s.length_in_min >120 THEN 'Over 2 hours'
+	ELSE 'Under 2 Hours'
+	END AS length_range
+	, AVG(r.imdb_rating) AS avg_imdb_rating
 FROM specs as s
-FULL JOIN rating as r
+LEFT JOIN rating as r
 	USING (movie_id)
-GROUP BY s.length_in_min
+GROUP BY length_range
 ORDER BY avg_imdb_rating DESC
 
---Answer: Out of the top 25 IMDB ratings, 22 were over 2 hours in length.
+--Answer: Based on average rating, movies over 2 hours are rated higher.
